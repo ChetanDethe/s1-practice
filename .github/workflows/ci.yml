@@ -1,0 +1,55 @@
+# CI — runs on every pull request and on every change to main (task S-1).
+# The same checks on Linux and on Windows: the Java build with all tests, then the web checks.
+name: ci
+on:
+    pull_request:
+    push:
+        branches: [main]
+permissions:
+    contents: read
+# A newer push to the same pull request stops the older run.
+concurrency:
+    group: ci-${{ github.ref }}
+    cancel-in-progress: true
+jobs:
+    build:
+        name: build (${{ matrix.os }})
+        strategy:
+            fail-fast: false
+            matrix:
+                os: [ubuntu-24.04, windows-2025]
+        runs-on: ${{ matrix.os }}
+        timeout-minutes: 20
+        steps:
+            - name: Get the code
+              uses: actions/checkout@v7
+            - name: Install Java 25
+              uses: actions/setup-java@v6
+              with:
+                  distribution: temurin
+                  java-version: '25'
+                  cache: maven
+            - name: Install Node.js (version from web/.nvmrc)
+              uses: actions/setup-node@v7
+              with:
+                  node-version-file: web/.nvmrc
+                  cache: npm
+                  cache-dependency-path: web/package-lock.json
+            - name: Java build and tests (Linux)
+              if: runner.os == 'Linux'
+              run: ./mvnw -B -ntp verify
+            - name: Java build and tests (Windows)
+              if: runner.os == 'Windows'
+              run: .\mvnw.cmd -B -ntp verify
+            - name: Web — install the exact versions
+              working-directory: web
+              run: npm ci
+            - name: Web — lint
+              working-directory: web
+              run: npm run lint
+            - name: Web — typecheck
+              working-directory: web
+              run: npm run typecheck
+            - name: Web — tests
+              working-directory: web
+              run: npm test
