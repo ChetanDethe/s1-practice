@@ -1,6 +1,18 @@
 target/
 node_modules/
 dist/
-.idea/
-.vscode/
+
+# IntelliJ: keep personal files out, but share the code style
+.idea/*
+!.idea/codeStyles/
 *.iml
+
+# VS Code
+.vscode/
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
